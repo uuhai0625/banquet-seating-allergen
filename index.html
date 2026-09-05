@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宴会配席表・アレルゲン仕込み票メーカー</title>
+<style>
+  :root {
+    --bg: #faf5f1;
+    --panel: #ffffff;
+    --border: #ecdfd6;
+    --text: #362a24;
+    --muted: #8a7669;
+    --accent: #b5432f;
+    --accent-dark: #8a2f1f;
+    --ok-bg: #fbeae6;
+    --locked: #b0a196;
+    --warn-bg: #fff3cd;
+    --warn-text: #7a5b00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  header {
+    background: linear-gradient(135deg, #c85a3f, #8a2f1f);
+    color: #fff;
+    padding: 32px 20px 26px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 8px; font-size: 1.6rem; }
+  header p { margin: 0; opacity: .92; font-size: .95rem; }
+  .disclaimer {
+    max-width: 780px; margin: 18px auto 0;
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.4);
+    border-radius: 8px; padding: 10px 14px; font-size: .82rem;
+  }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+  section.card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  section.card h2 { margin: 0 0 4px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+  section.card .desc { color: var(--muted); font-size: .85rem; margin: 0 0 14px; }
+  .badge { display: inline-block; font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: #eee; color: #4a4a4a; font-weight: bold; }
+  .badge.pro { background: #fff1cc; color: #8a6100; }
+
+  label.field { display: block; margin-bottom: 12px; }
+  label.field .lbl { font-size: .83rem; font-weight: bold; }
+  label.field input, label.field select, label.field textarea {
+    width: 100%; margin-top: 5px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: .92rem; font-family: inherit; background: #fffdfc;
+  }
+  label.field textarea { resize: vertical; min-height: 46px; }
+  .row2 { display: flex; gap: 12px; }
+  .row2 > * { flex: 1; }
+  .row3 { display: flex; gap: 12px; }
+  .row3 > * { flex: 1; }
+
+  .event-tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .event-tab { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: #fffdfc; cursor: pointer; font-size: .85rem; }
+  .event-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .subtabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .subtab { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: #fffdfc; cursor: pointer; font-size: .83rem; }
+  .subtab.active { background: var(--ok-bg); border-color: var(--accent); font-weight: bold; }
+
+  .row-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; flex-wrap: wrap; }
+  .row-item input, .row-item select { padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
+  .btn-secondary {
+    background: #fff; border: 1px solid var(--border); color: var(--text);
+    padding: 8px 14px; border-radius: 8px; font-size: .82rem; cursor: pointer;
+  }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .buy-btn {
+    display: inline-block; margin-top: 10px; background: var(--accent); color: #fff; font-weight: bold;
+    padding: 10px 22px; border-radius: 999px; text-decoration: none; font-size: .9rem;
+  }
+  .buy-btn:hover { background: var(--accent-dark); }
+
+  .chk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px,1fr)); gap: 5px; margin: 6px 0 10px; }
+  .chk-grid label { display: flex; align-items: center; gap: 5px; font-size: .78rem; background: #fffdfc; border: 1px solid var(--border); border-radius: 6px; padding: 5px 6px; }
+  .chk-grid input { margin: 0; }
+  .chk-grid.required label { border-color: #e0b0a5; }
+
+  .locked-panel {
+    border: 1px dashed var(--locked); border-radius: 10px; padding: 18px; text-align: center; color: var(--muted); background: #fdfaf8;
+  }
+  .locked-panel .feat-list { text-align: left; max-width: 460px; margin: 12px auto; font-size: .85rem; padding-left: 1.2em; }
+
+  .format-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .format-tab { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: #fffdfc; cursor: pointer; font-size: .85rem; }
+  .format-tab.active { background: var(--ok-bg); border-color: var(--accent); font-weight: bold; }
+  .format-tab.locked { opacity: .5; cursor: not-allowed; }
+
+  .preview-wrap { background: #f3e9e2; border-radius: 10px; padding: 20px; display: flex; justify-content: center; overflow-x: auto; }
+
+  .out-sheet { width: 210mm; min-height: 148mm; background: #fff; border: 1px solid #ccc; padding: 14mm 12mm; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+  .out-sheet h3 { border-bottom: 2px solid var(--accent); padding-bottom: 4px; font-size: 1.1rem; }
+  .out-sheet table { width: 100%; border-collapse: collapse; margin-bottom: 14px; table-layout: fixed; }
+  .out-sheet table th, .out-sheet table td { border: 1px solid #ddd; padding: 5px 7px; font-size: .78rem; word-break: break-word; overflow-wrap: break-word; text-align: left; }
+  .out-sheet table th { background: #faf2ee; }
+  .out-sheet .allergy-mark { color: var(--accent-dark); font-weight: bold; }
+
+  .out-card { width: 91mm; min-height: 55mm; background: #fff; border-radius: 6px; border: 1px solid #ccc; padding: 12px 14px; font-size: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+  .out-card .table-no { font-size: 18px; font-weight: bold; color: var(--accent-dark); }
+  .out-card .guest-block { border-top: 1px dashed var(--border); margin-top: 6px; padding-top: 6px; }
+  .out-card .warn { background: var(--warn-bg); color: var(--warn-text); padding: 3px 6px; border-radius: 4px; margin-top: 4px; font-size: 9px; font-weight: bold; }
+
+  footer { max-width: 900px; margin: 0 auto; padding: 0 16px 40px; font-size: .76rem; color: var(--muted); }
+  footer .updated { font-weight: bold; }
+
+  @media print {
+    @page { size: A4; margin: 8mm; }
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { position: absolute; left: 0; top: 0; }
+    #printArea .out-sheet { width: auto; min-height: 0; padding: 0; border: none; box-shadow: none; }
+    body { background: #fff; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>宴会配席表・アレルゲン仕込み票メーカー</h1>
+  <p>団体予約の人数・卓割り・アレルギー情報を1回入力して、厨房用一覧・卓別カード・進行表にまとめて出力</p>
+  <div class="disclaimer">
+    ⚠️ 外食(対面提供)でのアレルギー情報提供は法的な義務ではありませんが、正確な情報共有は事故防止に重要です。本ツールは入力内容を整形するものであり、提供可否の最終判断・医学的判断は必ず店舗のスタッフが行ってください。
+  </div>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2>① 予約の基本情報を入力 <span class="badge" id="edition-badge">FREE版: 1件まで</span></h2>
+    <p class="desc">買い切り版では複数の予約を登録できます。</p>
+
+    <div class="event-tab-row" id="eventTabs"></div>
+
+    <div id="basicForm"></div>
+  </section>
+
+  <section class="card">
+    <h2>② 卓割り・アレルギー対応者を入力</h2>
+    <div class="subtabs" id="subTabs">
+      <div class="subtab active" data-sub="tables">卓割り</div>
+      <div class="subtab" data-sub="allergy">アレルギー対応者</div>
+      <div class="subtab" data-sub="schedule">進行表</div>
+    </div>
+    <div id="subForm"></div>
+  </section>
+
+  <section class="card" id="format-section">
+    <h2>③ 出力形式を選ぶ</h2>
+    <div class="format-tabs" id="formatTabs">
+      <div class="format-tab active" data-fmt="kitchen">厨房用一覧</div>
+      <div class="format-tab" data-fmt="card" id="tab-card">卓別カード</div>
+      <div class="format-tab" data-fmt="schedule" id="tab-schedule">進行表</div>
+    </div>
+    <div class="preview-wrap" id="previewWrap"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" id="printBtn">🖨️ この形式を印刷</button>
+    </div>
+  </section>
+
+  <section class="card" id="pro-section">
+    <h2>④ 複数予約管理・全形式出力 <span class="badge pro">買い切り版</span></h2>
+    <div class="locked-panel">
+      <p>買い切り版(ダウンロード購入)では、以下が使えます:</p>
+      <ul class="feat-list">
+        <li>複数の予約を登録して切り替え表示(シーズン中の複数宴会をまとめて管理)</li>
+        <li>卓別カード・進行表も出力可能(厨房用一覧のみでなく)</li>
+        <li>入力内容をこのブラウザに保存し、次回から呼び出して再印刷</li>
+      </ul>
+      <a class="buy-btn" href="#" id="buyLink" target="_blank" rel="noopener">買い切り版を見る(BOOTH)</a>
+    </div>
+  </section>
+
+  <section class="card" id="save-section" style="display:none;">
+    <h2>⑤ 入力内容の保存</h2>
+    <div class="btn-row" style="margin-top:0;">
+      <button class="btn-secondary" id="saveBtn">現在の内容をこのブラウザに保存</button>
+      <button class="btn-secondary" id="loadBtn">保存済みの内容を読み込む</button>
+    </div>
+    <p class="desc" id="saveStatus" style="margin:8px 0 0;"></p>
+  </section>
+
+</main>
+
+<footer>
+  <p><span class="updated">最終更新: 2026年9月時点の消費者庁アレルゲン表示基準(義務8品目・推奨20品目)を参考に作成。</span></p>
+  <p>本ツールは完全にブラウザ内で動作し、入力した予約情報はどこにも送信されません(開発者ツールのネットワークタブで通信が発生しないことをご確認いただけます)。全てお使いの端末内のみに保存されます。</p>
+</footer>
+
+<div id="printArea"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var EDITION = "free"; // "full" で買い切り完全版
+  var MAX_EVENTS = EDITION === "full" ? 20 : 1;
+
+  var ALLERGENS_REQUIRED = [
+    ["egg", "卵"], ["milk", "乳"], ["wheat", "小麦"], ["shrimp", "えび"], ["crab", "かに"],
+    ["walnut", "くるみ"], ["soba", "そば"], ["peanut", "落花生"]
+  ];
+  var ALLERGENS_RECOMMENDED = [
+    ["almond", "アーモンド"], ["abalone", "あわび"], ["squid", "いか"], ["salmonroe", "いくら"],
+    ["orange", "オレンジ"], ["cashew", "カシューナッツ"], ["kiwi", "キウイ"], ["beef", "牛肉"],
+    ["sesame", "ごま"], ["salmon", "さけ"], ["mackerel", "さば"], ["soy", "大豆"],
+    ["chicken", "鶏肉"], ["banana", "バナナ"], ["pork", "豚肉"], ["matsutake", "まつたけ"],
+    ["peach", "もも"], ["yam", "やまいも"], ["apple", "りんご"], ["gelatin", "ゼラチン"]
+  ];
+
+  function esc(s) { return (s || "").toString().replace(/[<>&"']/g, function (c) { return { "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  function makeKeyboardClickable(el) {
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
+    });
+  }
+
+  function newTable() { return { id: Date.now() + "-" + Math.random().toString(36).slice(2, 6), tableNo: "", seatCount: "", note: "" }; }
+  function newAllergyGuest() { return { id: Date.now() + "-" + Math.random().toString(36).slice(2, 6), tableNo: "", name: "", allergens: {}, otherAllergen: "", handling: "unconfirmed", note: "" }; }
+  function newScheduleItem() { return { id: Date.now() + "-" + Math.random().toString(36).slice(2, 6), time: "", item: "" }; }
+
+  function newEvent() {
+    return {
+      id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      eventName: "", eventDate: "", guestCount: "", courseContent: "",
+      organizerName: "", organizerContact: "",
+      tables: [newTable()],
+      allergyGuests: [newAllergyGuest()],
+      schedule: [newScheduleItem()]
+    };
+  }
+
+  var events = [newEvent()];
+  var activeEventId = events[0].id;
+  var activeSub = "tables";
+  var activeFormat = "kitchen";
+
+  function getActiveEvent() {
+    for (var i = 0; i < events.length; i++) if (events[i].id === activeEventId) return events[i];
+    return events[0];
+  }
+
+  function field(labelText, inputHtml) {
+    return '<label class="field"><span class="lbl">' + labelText + '</span>' + inputHtml + '</label>';
+  }
+
+  function renderEventTabs() {
+    var el = document.getElementById("eventTabs");
+    el.innerHTML = "";
+    events.forEach(function (ev, i) {
+      var tab = document.createElement("div");
+      tab.className = "event-tab" + (ev.id === activeEventId ? " active" : "");
+      tab.textContent = ev.eventName || ("予約" + (i + 1));
+      tab.addEventListener("click", function () { activeEventId = ev.id; renderAll(); });
+      makeKeyboardClickable(tab);
+      el.appendChild(tab);
+    });
+    if (events.length < MAX_EVENTS) {
+      var add = document.createElement("div");
+      add.className = "event-tab";
+      add.textContent = "+ 予約を追加";
+      add.addEventListener("click", function () {
+        var ne = newEvent(); events.push(ne); activeEventId = ne.id; renderAll();
+      });
+      makeKeyboardClickable(add);
+      el.appendChild(add);
+    } else if (EDITION !== "full") {
+      var lock = document.createElement("div");
+      lock.className = "event-tab";
+      lock.style.opacity = ".5";
+      lock.textContent = "🔒 2件目以降は買い切り版";
+      el.appendChild(lock);
+    }
+  }
+
+  function renderBasicForm() {
+    var ev = getActiveEvent();
+    var el = document.getElementById("basicForm");
+    el.innerHTML =
+      '<div class="row3">' +
+        field("団体名・予約名", '<input id="f-eventName" value="' + esc(ev.eventName) + '" placeholder="例) 〇〇会社様 歓送迎会">') +
+        field("予約日", '<input id="f-eventDate" type="date" value="' + esc(ev.eventDate) + '">') +
+        field("人数", '<input id="f-guestCount" type="number" value="' + esc(ev.guestCount) + '">') +
+      '</div>' +
+      field("コース内容", '<input id="f-courseContent" value="' + esc(ev.courseContent) + '" placeholder="例) 飲み放題付き宴会コース">') +
+      '<div class="row2">' +
+        field("幹事名", '<input id="f-organizerName" value="' + esc(ev.organizerName) + '">') +
+        field("幹事連絡先", '<input id="f-organizerContact" value="' + esc(ev.organizerContact) + '">') +
+      '</div>';
+    Array.prototype.forEach.call(el.querySelectorAll("[id^=f-]"), function (input) {
+      var key = input.id.slice(2);
+      input.addEventListener("input", function () {
+        ev[key] = input.value;
+        if (key === "eventName") renderEventTabs();
+        renderPreview();
+      });
+    });
+  }
+
+  function allergenChkHtml(g) {
+    var reqHtml = ALLERGENS_REQUIRED.map(function (a) {
+      return '<label><input type="checkbox" data-akey="' + a[0] + '" ' + (g.allergens[a[0]] ? "checked" : "") + '> ' + a[1] + '</label>';
+    }).join("");
+    var recHtml = ALLERGENS_RECOMMENDED.map(function (a) {
+      return '<label><input type="checkbox" data-akey="' + a[0] + '" ' + (g.allergens[a[0]] ? "checked" : "") + '> ' + a[1] + '</label>';
+    }).join("");
+    return '<div style="font-size:.76rem;color:var(--muted);margin-bottom:2px;">義務8品目</div><div class="chk-grid required">' + reqHtml + '</div>' +
+      '<div style="font-size:.76rem;color:var(--muted);margin-bottom:2px;">推奨20品目</div><div class="chk-grid">' + recHtml + '</div>';
+  }
+
+  function renderSubForm() {
+    var ev = getActiveEvent();
+    var el = document.getElementById("subForm");
+    if (activeSub === "tables") {
+      var rows = ev.tables.map(function (t, i) {
+        return '<div class="row-item" data-i="' + i + '">' +
+          '<input placeholder="卓番号" data-k="tableNo" value="' + esc(t.tableNo) + '" style="width:80px;">' +
+          '<input placeholder="人数" type="number" data-k="seatCount" value="' + esc(t.seatCount) + '" style="width:70px;">' +
+          '<input placeholder="備考(例: 座敷/掘りごたつ)" data-k="note" value="' + esc(t.note) + '" style="flex:1;min-width:150px;">' +
+          '<button type="button" class="btn-secondary del-row" data-i="' + i + '">削除</button>' +
+        '</div>';
+      }).join("");
+      el.innerHTML = rows + '<button type="button" class="btn-secondary" id="addTableBtn" style="margin-top:6px;">+ 卓を追加</button>';
+      wireRows(el, ev.tables, newTable, "addTableBtn");
+    } else if (activeSub === "allergy") {
+      var html = ev.allergyGuests.map(function (g, i) {
+        return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;" data-i="' + i + '">' +
+          '<div class="row-item">' +
+            '<input placeholder="卓番号" data-k="tableNo" value="' + esc(g.tableNo) + '" style="width:80px;">' +
+            '<input placeholder="お客様名(任意)" data-k="name" value="' + esc(g.name) + '" style="width:160px;">' +
+            '<select data-k="handling" style="width:140px;">' +
+              '<option value="unconfirmed"' + (g.handling === "unconfirmed" ? " selected" : "") + '>未確認</option>' +
+              '<option value="remove"' + (g.handling === "remove" ? " selected" : "") + '>除去対応</option>' +
+              '<option value="substitute"' + (g.handling === "substitute" ? " selected" : "") + '>代替対応</option>' +
+              '<option value="none"' + (g.handling === "none" ? " selected" : "") + '>対応なし(共有のみ)</option>' +
+            '</select>' +
+            '<button type="button" class="btn-secondary del-guest" data-i="' + i + '">削除</button>' +
+          '</div>' +
+          allergenChkHtml(g) +
+          '<input placeholder="その他アレルゲン(自由記述)" data-k="otherAllergen" value="' + esc(g.otherAllergen) + '" style="width:100%;margin-bottom:6px;">' +
+          '<input placeholder="備考" data-k="note" value="' + esc(g.note) + '" style="width:100%;">' +
+        '</div>';
+      }).join("");
+      el.innerHTML = html + '<button type="button" class="btn-secondary" id="addGuestBtn">+ アレルギー対応者を追加</button>';
+      wireAllergyRows(el, ev.allergyGuests);
+    } else {
+      var srows = ev.schedule.map(function (s, i) {
+        return '<div class="row-item" data-i="' + i + '">' +
+          '<input placeholder="時刻(例: 18:00)" data-k="time" value="' + esc(s.time) + '" style="width:110px;">' +
+          '<input placeholder="内容(例: 開宴・乾杯)" data-k="item" value="' + esc(s.item) + '" style="flex:1;min-width:180px;">' +
+          '<button type="button" class="btn-secondary del-row" data-i="' + i + '">削除</button>' +
+        '</div>';
+      }).join("");
+      el.innerHTML = srows + '<button type="button" class="btn-secondary" id="addScheduleBtn" style="margin-top:6px;">+ 項目を追加</button>';
+      wireRows(el, ev.schedule, newScheduleItem, "addScheduleBtn");
+    }
+  }
+
+  function wireRows(el, arr, factory, addBtnId) {
+    Array.prototype.forEach.call(el.querySelectorAll("input"), function (inp) {
+      inp.addEventListener("input", function () {
+        var row = inp.closest("[data-i]");
+        var i = +row.dataset.i;
+        arr[i][inp.dataset.k] = inp.value;
+        renderPreview();
+      });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll(".del-row"), function (btn) {
+      btn.addEventListener("click", function () {
+        var i = +btn.dataset.i;
+        arr.splice(i, 1);
+        if (!arr.length) arr.push(factory());
+        renderSubForm(); renderPreview();
+      });
+    });
+    var addBtn = document.getElementById(addBtnId);
+    if (addBtn) addBtn.addEventListener("click", function () { arr.push(factory()); renderSubForm(); });
+  }
+
+  function wireAllergyRows(el, arr) {
+    Array.prototype.forEach.call(el.querySelectorAll("input[data-k], select[data-k]"), function (inp) {
+      var evt = inp.tagName === "SELECT" ? "change" : "input";
+      inp.addEventListener(evt, function () {
+        var row = inp.closest("[data-i]");
+        var i = +row.dataset.i;
+        arr[i][inp.dataset.k] = inp.value;
+        renderPreview();
+      });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll("[data-akey]"), function (cb) {
+      cb.addEventListener("change", function () {
+        var row = cb.closest("[data-i]");
+        var i = +row.dataset.i;
+        arr[i].allergens[cb.dataset.akey] = cb.checked;
+        renderPreview();
+      });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll(".del-guest"), function (btn) {
+      btn.addEventListener("click", function () {
+        var i = +btn.dataset.i;
+        arr.splice(i, 1);
+        if (!arr.length) arr.push(newAllergyGuest());
+        renderSubForm(); renderPreview();
+      });
+    });
+    var addBtn = document.getElementById("addGuestBtn");
+    if (addBtn) addBtn.addEventListener("click", function () { arr.push(newAllergyGuest()); renderSubForm(); });
+  }
+
+  function allergenLabels(g) {
+    var all = ALLERGENS_REQUIRED.concat(ALLERGENS_RECOMMENDED);
+    var labels = all.filter(function (a) { return g.allergens[a[0]]; }).map(function (a) { return a[1]; });
+    if (g.otherAllergen) labels.push(g.otherAllergen);
+    return labels;
+  }
+
+  function handlingLabel(h) {
+    return h === "remove" ? "除去対応" : h === "substitute" ? "代替対応" : h === "none" ? "対応なし" : "未確認";
+  }
+
+  function buildKitchenHtml(ev) {
+    var rows = ev.tables.map(function (t) {
+      var guestsAtTable = ev.allergyGuests.filter(function (g) { return g.tableNo === t.tableNo && t.tableNo; });
+      var allergyNote = guestsAtTable.length
+        ? guestsAtTable.map(function (g) { return esc(allergenLabels(g).join("・") || "確認中") + "(" + esc(handlingLabel(g.handling)) + ")"; }).join(" / ")
+        : "-";
+      return '<tr><td>' + esc(t.tableNo) + '</td><td>' + esc(t.seatCount) + '</td><td>' + esc(t.note) + '</td><td class="allergy-mark">' + allergyNote + '</td></tr>';
+    }).join("");
+    return '' +
+      '<h3>厨房用一覧</h3>' +
+      '<table>' +
+        '<tr><th colspan="4">' + esc(ev.eventName || "(団体名未入力)") + ' ／ ' + esc(ev.eventDate) + ' ／ ' + esc(ev.guestCount) + '名 ／ ' + esc(ev.courseContent) + '</th></tr>' +
+        '<tr><th>卓番号</th><th>人数</th><th>備考</th><th>アレルギー対応</th></tr>' +
+        rows +
+      '</table>' +
+      '<p style="font-size:.8rem;color:#555;">幹事: ' + esc(ev.organizerName) + ' ' + esc(ev.organizerContact) + '</p>';
+  }
+
+  function buildCardHtml(ev, tableNo) {
+    var t = ev.tables.find(function (t) { return t.tableNo === tableNo; }) || ev.tables[0];
+    var guests = ev.allergyGuests.filter(function (g) { return g.tableNo === t.tableNo && t.tableNo; });
+    var guestHtml = guests.length
+      ? guests.map(function (g) {
+          return '<div class="guest-block">' +
+            (g.name ? esc(g.name) + '<br>' : '') +
+            '対応: ' + esc(handlingLabel(g.handling)) +
+            (allergenLabels(g).length ? '<div class="warn">⚠ ' + esc(allergenLabels(g).join("・")) + '</div>' : '') +
+            (g.note ? '<div>' + esc(g.note) + '</div>' : '') +
+          '</div>';
+        }).join("")
+      : '<div class="guest-block">アレルギー対応者なし</div>';
+    return '<div class="table-no">卓' + esc(t.tableNo || "-") + '(' + esc(t.seatCount || "-") + '名)</div>' +
+      (t.note ? '<div style="font-size:9px;color:#666;">' + esc(t.note) + '</div>' : '') +
+      guestHtml;
+  }
+
+  function buildScheduleHtml(ev) {
+    var rows = ev.schedule.filter(function (s) { return s.time || s.item; }).map(function (s) {
+      return '<tr><td>' + esc(s.time) + '</td><td>' + esc(s.item) + '</td></tr>';
+    }).join("");
+    if (!rows) rows = '<tr><td colspan="2">未入力</td></tr>';
+    return '<h3>進行表</h3>' +
+      '<p style="font-size:.85rem;color:#555;">' + esc(ev.eventName) + ' ／ ' + esc(ev.eventDate) + '</p>' +
+      '<table><tr><th style="width:100px;">時刻</th><th>内容</th></tr>' + rows + '</table>';
+  }
+
+  function renderPreview() {
+    var ev = getActiveEvent();
+    var el = document.getElementById("previewWrap");
+    var html = "";
+    if (activeFormat === "kitchen") {
+      html = '<div class="out-sheet">' + buildKitchenHtml(ev) + '</div>';
+    } else if (activeFormat === "card") {
+      var cardsHtml = ev.tables.filter(function (t) { return t.tableNo; }).map(function (t) {
+        return '<div class="out-card" style="margin:6px;display:inline-block;vertical-align:top;">' + buildCardHtml(ev, t.tableNo) + '</div>';
+      }).join("");
+      html = cardsHtml || '<div class="out-card">卓番号を入力してください</div>';
+    } else {
+      html = '<div class="out-sheet">' + buildScheduleHtml(ev) + '</div>';
+    }
+    el.innerHTML = html;
+    document.getElementById("printArea").innerHTML = html;
+  }
+
+  function renderAll() {
+    renderEventTabs();
+    renderBasicForm();
+    renderSubForm();
+    renderPreview();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".subtab"), function (tab) {
+    makeKeyboardClickable(tab);
+    tab.addEventListener("click", function () {
+      activeSub = tab.dataset.sub;
+      Array.prototype.forEach.call(document.querySelectorAll(".subtab"), function (t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      renderSubForm();
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".format-tab"), function (tab) {
+    makeKeyboardClickable(tab);
+    tab.addEventListener("click", function () {
+      var fmt = tab.dataset.fmt;
+      if (EDITION !== "full" && fmt !== "kitchen") { alert("この出力形式は買い切り版で利用できます。"); return; }
+      activeFormat = fmt;
+      Array.prototype.forEach.call(document.querySelectorAll(".format-tab"), function (t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      renderPreview();
+    });
+  });
+
+  document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+
+  document.getElementById("edition-badge").textContent = EDITION === "full" ? "買い切り版: 複数件対応" : "FREE版: 1件まで";
+  if (EDITION === "full") {
+    document.getElementById("pro-section").style.display = "none";
+    document.getElementById("save-section").style.display = "block";
+    document.getElementById("tab-card").classList.remove("locked");
+    document.getElementById("tab-schedule").classList.remove("locked");
+  } else {
+    document.getElementById("tab-card").classList.add("locked");
+    document.getElementById("tab-schedule").classList.add("locked");
+  }
+
+  // ============ 保存(買い切り版) ============
+  var SAVE_KEY = "banquet_seating_events_v1";
+  var saveBtn = document.getElementById("saveBtn");
+  var loadBtn = document.getElementById("loadBtn");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", function () {
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(events));
+        document.getElementById("saveStatus").textContent = "保存しました(" + new Date().toLocaleString() + ")";
+      } catch (e) {
+        document.getElementById("saveStatus").textContent = "保存に失敗しました(ブラウザの保存容量やプライベートブラウジング設定をご確認ください)。";
+      }
+    });
+    loadBtn.addEventListener("click", function () {
+      var raw;
+      try { raw = localStorage.getItem(SAVE_KEY); } catch (e) { document.getElementById("saveStatus").textContent = "読み込みに失敗しました。"; return; }
+      if (!raw) { document.getElementById("saveStatus").textContent = "保存されたデータがありません。"; return; }
+      try {
+        var loaded = JSON.parse(raw);
+        if (loaded && loaded.length) {
+          var normalized = loaded.map(function (ev) {
+            var base = newEvent();
+            for (var k in base) { if (ev && ev[k] !== undefined) base[k] = ev[k]; }
+            if (!base.tables || !base.tables.length) base.tables = [newTable()];
+            if (!base.allergyGuests || !base.allergyGuests.length) base.allergyGuests = [newAllergyGuest()];
+            if (!base.schedule || !base.schedule.length) base.schedule = [newScheduleItem()];
+            base.allergyGuests.forEach(function (g) { if (!g.allergens || typeof g.allergens !== "object") g.allergens = {}; });
+            return base;
+          });
+          events = normalized; activeEventId = events[0].id;
+          renderAll();
+          document.getElementById("saveStatus").textContent = "読み込みました。";
+        }
+      } catch (e) { document.getElementById("saveStatus").textContent = "読み込みに失敗しました。"; }
+    });
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
